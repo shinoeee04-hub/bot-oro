@@ -24,17 +24,26 @@ USE_VOL = True                      # filtro volumen > media 20
 STATE_FILE = "state_gold.json"
 
 
+def env(name):
+    """Lee un secreto quitando espacios y saltos de línea."""
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise RuntimeError(f"Falta el secreto {name} o está vacío")
+    return value
+
+
 def fetch_candles():
     # 1) Abrir sesión
     s = requests.post(
         f"{BASE_URL}/api/v1/session",
-        headers={"X-CAP-API-KEY": os.environ["CAPITAL_API_KEY"],
+        headers={"X-CAP-API-KEY": env("CAPITAL_API_KEY"),
                  "Content-Type": "application/json"},
-        json={"identifier": os.environ["CAPITAL_LOGIN"],
-              "password": os.environ["CAPITAL_API_PASSWORD"]},
+        json={"identifier": env("CAPITAL_LOGIN"),
+              "password": env("CAPITAL_API_PASSWORD")},
         timeout=20,
     )
-    s.raise_for_status()
+    if s.status_code != 200:
+        raise RuntimeError(f"Capital.com login {s.status_code}: {s.text}")
     auth = {"CST": s.headers["CST"],
             "X-SECURITY-TOKEN": s.headers["X-SECURITY-TOKEN"]}
 
@@ -45,7 +54,8 @@ def fetch_candles():
         params={"resolution": RESOLUTION, "max": 500},
         timeout=20,
     )
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise RuntimeError(f"Capital.com precios {r.status_code}: {r.text}")
     rows = []
     for p in r.json()["prices"]:
         mid = lambda k: (p[k]["bid"] + p[k]["ask"]) / 2
@@ -129,11 +139,12 @@ def save_state(state):
 
 def send_telegram(msg):
     r = requests.post(
-        f"https://api.telegram.org/bot{os.environ['TELEGRAM_TOKEN']}/sendMessage",
-        data={"chat_id": os.environ["TELEGRAM_CHAT_ID"], "text": msg},
+        f"https://api.telegram.org/bot{env('TELEGRAM_TOKEN')}/sendMessage",
+        data={"chat_id": env("TELEGRAM_CHAT_ID"), "text": msg},
         timeout=20,
     )
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise RuntimeError(f"Telegram {r.status_code}: {r.text}")
 
 
 def main():

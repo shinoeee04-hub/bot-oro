@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 # ───── Parámetros (tu configuración de TradingView) ─────
 SYMBOL = "GOLD"                     # epic del oro en Capital.com
-BASE_URL = "https://demo-api-capital.backend-capital.com"
+BASE_URL = "https://api-capital.backend-capital.com"
 RESOLUTION = "MINUTE_15"            # velas de 15 minutos
 TF_MIN = 15                         # minutos por vela
 EMA_F, EMA_M, EMA_S = 21, 50, 200

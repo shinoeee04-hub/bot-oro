@@ -1,0 +1,38 @@
+name: TP oro 15m
+on:
+  schedule:
+    - cron: "1,16,31,46 6-19 * * 1-5"   # 1 minuto después de cada cierre de vela de 15m
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Enviar mensaje de prueba"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: tp-gold
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pandas
+      - run: python tp5m_gold.py
+        env:
+          TEST_MODE: ${{ github.event.inputs.test }}
+          CAPITAL_API_KEY: ${{ secrets.CAPITAL_API_KEY }}
+          CAPITAL_LOGIN: ${{ secrets.CAPITAL_LOGIN }}
+          CAPITAL_API_PASSWORD: ${{ secrets.CAPITAL_API_PASSWORD }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Guardar estado
+        run: |
+          git config user.name "tp-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add state_gold.json || true
+          git diff --cached --quiet || (git commit -m "estado oro" && git push)
